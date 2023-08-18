@@ -346,7 +346,7 @@ open class NavigationMapView: MGLMapView, UIGestureRecognizerDelegate {
             let padding = UIEdgeInsets(top: point.y, left: point.x, bottom: bounds.height - point.y, right: bounds.width - point.x)
             let newCamera = camera ?? MGLMapCamera(lookingAtCenter: location.coordinate, fromDistance: altitude, pitch: 45, heading: location.course)
             let function: CAMediaTimingFunction? = animated ? CAMediaTimingFunction(name: CAMediaTimingFunctionName.linear) : nil
-            setCamera(newCamera, withDuration: duration, animationTimingFunction: function, edgePadding: padding, completionHandler: nil)
+            setCamera(newCamera, withDuration: duration, animationTimingFunction: function, completionHandler: nil)
         }
         if !tracksUserCourse || userAnchorPoint != userCourseView?.center ?? userAnchorPoint {
             UIView.animate(withDuration: duration, delay: 0, options: [.curveLinear, .beginFromCurrentState], animations: {
