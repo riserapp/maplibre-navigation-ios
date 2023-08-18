@@ -10,14 +10,14 @@ class ArrowStrokePolyline: ArrowFillPolyline {}
 
 class RouteMapViewController: UIViewController {
 
-    var navigationView: NavigationView { return view as! NavigationView }
-    var mapView: NavigationMapView { return navigationView.mapView }
-    var statusView: StatusView { return navigationView.statusView }
-    var reportButton: FloatingButton { return navigationView.reportButton }
-    var lanesView: LanesView { return navigationView.lanesView }
-    var nextBannerView: NextBannerView { return navigationView.nextBannerView }
-    var instructionsBannerView: InstructionsBannerView { return navigationView.instructionsBannerView }
-    var instructionsBannerContentView: InstructionsBannerContentView { return navigationView.instructionsBannerContentView }
+    public var navigationView: NavigationView { return view as! NavigationView }
+    public var mapView: NavigationMapView { return navigationView.mapView }
+    public var statusView: StatusView { return navigationView.statusView }
+    public var reportButton: FloatingButton { return navigationView.reportButton }
+    public var lanesView: LanesView { return navigationView.lanesView }
+    public var nextBannerView: NextBannerView { return navigationView.nextBannerView }
+    public var instructionsBannerView: InstructionsBannerView { return navigationView.instructionsBannerView }
+    public var instructionsBannerContentView: InstructionsBannerContentView { return navigationView.instructionsBannerContentView }
 
     lazy var endOfRouteViewController: EndOfRouteViewController = {
         let storyboard = UIStoryboard(name: "Navigation", bundle: .mapboxNavigation)

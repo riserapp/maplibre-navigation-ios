@@ -323,6 +323,8 @@ open class NavigationViewController: UIViewController {
     }
     
     var mapViewController: RouteMapViewController?
+
+    public var navigationView: NavigationView? { mapViewController?.navigationView }
     
     /**
      A Boolean value that determines whether the map annotates the locations at which instructions are spoken for debugging purposes.

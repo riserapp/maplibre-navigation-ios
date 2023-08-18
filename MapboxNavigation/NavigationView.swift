@@ -90,7 +90,7 @@ open class NavigationView: UIView {
     
     lazy var informationStackView = UIStackView(orientation: .vertical, autoLayout: true)
     
-    lazy var floatingStackView: UIStackView = {
+    public lazy var floatingStackView: UIStackView = {
         let stackView = UIStackView(orientation: .vertical, autoLayout: true)
         stackView.distribution = .equalSpacing
         stackView.spacing = Constants.buttonSpacing
