@@ -77,8 +77,8 @@ open class DismissButton: Button { }
 @objc(MBFloatingButton)
 open class FloatingButton: Button {
     
-    static let buttonSize = CGSize(width: 50, height: 50)
-    static let sizeConstraintPriority = UILayoutPriority(999.0) //Don't fight with the stack view (superview) when it tries to hide buttons.
+    public static let buttonSize = CGSize(width: 50, height: 50)
+    public static let sizeConstraintPriority = UILayoutPriority(999.0) //Don't fight with the stack view (superview) when it tries to hide buttons.
     
     lazy var widthConstraint: NSLayoutConstraint = {
         let constraint = self.widthAnchor.constraint(equalToConstant: FloatingButton.buttonSize.width)
@@ -103,7 +103,7 @@ open class FloatingButton: Button {
         }
     }
     
-    class func rounded<T: FloatingButton>(image: UIImage, selectedImage: UIImage? = nil, size: CGSize = FloatingButton.buttonSize) -> T {
+    public class func rounded<T: FloatingButton>(image: UIImage, selectedImage: UIImage? = nil, size: CGSize = FloatingButton.buttonSize) -> T {
         let button = T.init(type: .custom)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.constrainedSize = size
