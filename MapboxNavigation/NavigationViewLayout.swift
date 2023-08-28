@@ -13,7 +13,7 @@ extension NavigationView {
         
         instructionsBannerView.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
         instructionsBannerView.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
-        instructionsBannerView.heightAnchor.constraint(equalToConstant: 96).isActive = true
+        instructionsBannerView.heightAnchor.constraint(equalToConstant: 120).isActive = true
         
         NSLayoutConstraint.activate(bannerShowConstraints)
 
