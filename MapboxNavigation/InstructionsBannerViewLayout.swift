@@ -3,7 +3,7 @@ import UIKit
 extension BaseInstructionsBannerView {
     
     static let padding: CGFloat = 16
-    static let maneuverViewSize = CGSize(width: 50, height: 50)
+    static let maneuverViewSize = CGSize(width: 60, height: 60)
     static let stepListIndicatorViewSize = CGSize(width: 30, height: 5)
     
     func setupViews() {
