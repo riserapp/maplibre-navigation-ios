@@ -206,7 +206,7 @@ open class NavigationViewController: UIViewController {
             } else {
                 routeController.routeProgress = RouteProgress(route: route)
             }
-            NavigationSettings.shared.distanceUnit = route.routeOptions.locale.usesMetric ? .kilometer : .mile
+            //NavigationSettings.shared.distanceUnit = route.routeOptions.locale.usesMetric ? .kilometer : .mile
             mapViewController?.notifyDidReroute(route: route)
         }
     }
@@ -378,7 +378,7 @@ open class NavigationViewController: UIViewController {
 
         self.directions = directions
         self.route = route
-        NavigationSettings.shared.distanceUnit = route.routeOptions.locale.usesMetric ? .kilometer : .mile
+        //NavigationSettings.shared.distanceUnit = route.routeOptions.locale.usesMetric ? .kilometer : .mile
         routeController.resume()
         
         let mapViewController = RouteMapViewController(routeController: self.routeController, delegate: self)
