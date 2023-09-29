@@ -81,6 +81,8 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     
     var volumeToken: NSKeyValueObservation?
     var muteToken: NSKeyValueObservation?
+
+    public var voiceLocale: Locale?
     
     /**
      Default initializer for `RouteVoiceController`.
@@ -203,29 +205,15 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
             voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
         }
         
-        var utterance: AVSpeechUtterance?
-        if Locale.preferredLocalLanguageCountryCode == "en-US" {
-            // Alex can’t handle attributed text.
-            utterance = AVSpeechUtterance(string: instruction.text)
-            utterance!.voice = AVSpeechSynthesisVoice(identifier: AVSpeechSynthesisVoiceIdentifierAlex)
-        }
+
+        let regionCode = voiceLocale?.regionCode ?? Locale.preferredLocalLanguageCountryCode
+        let languageCode = voiceLocale?.languageCode ?? Locale.preferredLocalLanguageCountryCode
         
         let modifiedInstruction = voiceControllerDelegate?.voiceController?(self, willSpeak: instruction, routeProgress: routeProgress!) ?? instruction
         
-        if #available(iOS 10.0, *), utterance?.voice == nil {
-            utterance = AVSpeechUtterance(attributedString: modifiedInstruction.attributedText(for: routeProgress!.currentLegProgress))
-        } else {
-            utterance = AVSpeechUtterance(string: modifiedInstruction.text)
-        }
-        
-        // Only localized languages will have a proper fallback voice
-        if utterance?.voice == nil {
-            utterance?.voice = AVSpeechSynthesisVoice(language: Locale.preferredLocalLanguageCountryCode)
-        }
-        
-        if let utterance = utterance {
-            speechSynth.speak(utterance)
-        }
+        let utterance = AVSpeechUtterance(string: modifiedInstruction.text)
+        utterance.voice = AVSpeechSynthesisVoice(language: languageCode)
+        speechSynth.speak(utterance)
     }
 }
 
