@@ -1,15 +1,15 @@
 import UIKit
 import MapboxCoreNavigation
 import MapboxNavigation
-import Mapbox
+import MapLibre
 import CoreLocation
 import AVFoundation
 import MapboxDirections
 import Turf
 
-class CustomViewController: UIViewController, MGLMapViewDelegate {
+class CustomViewController: UIViewController, MLNMapViewDelegate {
 
-    var destination: MGLPointAnnotation!
+    var destination: MLNPointAnnotation!
     let directions = Directions.shared
     var routeController: RouteController!
     var simulateLocation = false
@@ -17,7 +17,7 @@ class CustomViewController: UIViewController, MGLMapViewDelegate {
     var userRoute: Route?
 
     // Start voice instructions
-    let voiceController = MapboxVoiceController()
+    let voiceController = RouteVoiceController()
     
     var stepsViewController: StepsViewController?
 
@@ -32,6 +32,7 @@ class CustomViewController: UIViewController, MGLMapViewDelegate {
         routeController = RouteController(along: userRoute!, locationManager: locationManager)
         
         mapView.delegate = self
+        mapView.courseTrackingDelegate = self
         mapView.compassView.isHidden = true
         
         instructionsBannerView.delegate = self
@@ -68,7 +69,7 @@ class CustomViewController: UIViewController, MGLMapViewDelegate {
         NotificationCenter.default.removeObserver(self, name: .routeControllerDidPassVisualInstructionPoint, object: nil)
     }
 
-    func mapView(_ mapView: MGLMapView, didFinishLoading style: MGLStyle) {
+    func mapView(_ mapView: MLNMapView, didFinishLoading style: MLNStyle) {
         self.mapView.showRoutes([routeController.routeProgress.route])
     }
 
@@ -159,4 +160,18 @@ extension CustomViewController: StepsViewControllerDelegate {
             self?.stepsViewController = nil
         }
     }
+}
+
+// MARK: - NavigationMapViewCourseTrackingDelegate
+extension CustomViewController: NavigationMapViewCourseTrackingDelegate {
+
+    func updateCamera(_ mapView: NavigationMapView, location: CLLocation, routeProgress: RouteProgress) -> Bool{
+        
+        let newCamera = MLNMapCamera(lookingAtCenter: location.coordinate, acrossDistance: 750, pitch: 5, heading: location.course)
+        let function: CAMediaTimingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.linear)
+        mapView.setCamera(newCamera, withDuration: 1, animationTimingFunction: function, edgePadding: UIEdgeInsets.zero, completionHandler: nil)
+        
+        return true
+    }
+
 }

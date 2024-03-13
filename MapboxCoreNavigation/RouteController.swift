@@ -250,6 +250,9 @@ open class RouteController: NSObject, Router {
         userSnapToStepDistanceFromManeuver = Polyline(coordinates).distance(from: coordinate)
     }
 
+    /**
+     If the user is close to an intersection, the tolerance will be lower, otherwise it will be RouteControllerMaximumDistanceBeforeRecalculating
+     */
     @objc public var reroutingTolerance: CLLocationDistance {
         guard let intersections = routeProgress.currentLegProgress.currentStepProgress.intersectionsIncludingUpcomingManeuverIntersection else { return RouteControllerMaximumDistanceBeforeRecalculating }
         guard let userLocation = rawLocation else { return RouteControllerMaximumDistanceBeforeRecalculating }
@@ -441,7 +444,7 @@ extension RouteController: CLLocationManagerDelegate {
     }
 
     /**
-     Monitors the user's course to see if it is consistantly moving away from what we expect the course to be at a given point.
+     Monitors the user's course to see if it is consistently moving away from what we expect the course to be at a given point.
      */
     func userCourseIsOnRoute(_ location: CLLocation) -> Bool {
         let nearByCoordinates = routeProgress.currentLegProgress.nearbyCoordinates
@@ -451,7 +454,7 @@ extension RouteController: CLLocationManagerDelegate {
 
         if movementsAwayFromRoute >= max(RouteControllerMinNumberOfInCorrectCourses, maxUpdatesAwayFromRouteGivenAccuracy)  {
             return false
-        } else if location.shouldSnap(toRouteWith: calculatedCourseForLocationOnStep) {
+        } else if location.shouldSnapCourse(toRouteWith: calculatedCourseForLocationOnStep) {
             movementsAwayFromRoute = 0
         } else {
             movementsAwayFromRoute += 1
@@ -472,11 +475,15 @@ extension RouteController: CLLocationManagerDelegate {
             return true
         }
 
+        // If user is close to an intersection, the radius will be lower, so reroutes will fire easier.
         let radius = max(reroutingTolerance, RouteControllerManeuverZoneRadius)
+        
+        // This checks all coordinates of the step, if user is close to the step, they on the route
         let isCloseToCurrentStep = location.isWithin(radius, of: routeProgress.currentLegProgress.currentStep)
 
+        // If the user is either close to the current step or at least driving in the right direction, we assume the user is on route
         guard !isCloseToCurrentStep || !userCourseIsOnRoute(location) else { return true }
-
+        
         // Check and see if the user is near a future step.
         guard let nearestStep = routeProgress.currentLegProgress.closestStep(to: location.coordinate) else {
             return false
@@ -634,6 +641,9 @@ extension RouteController: CLLocationManagerDelegate {
             guard let strongSelf = self else {
                 return
             }
+            
+            // Update the rerouting state
+            strongSelf.isRerouting = false
 
             if let error = error {
                 strongSelf.delegate?.routeController?(strongSelf, didFailToRerouteWith: error)
@@ -679,25 +689,27 @@ extension RouteController: CLLocationManagerDelegate {
     }
 
     func getDirections(from location: CLLocation, along progress: RouteProgress, completion: @escaping (_ mostSimilarRoute: Route?, _ routes: [Route]?, _ error: Error?)->Void) {
-        routeTask?.cancel()
-        let options = progress.reroutingOptions(with: location)
-
-        self.lastRerouteLocation = location
-
-        let complete = { [weak self] (mostSimilarRoute: Route?, routes: [Route]?, error: NSError?) in
-            self?.isRerouting = false
-            completion(mostSimilarRoute, routes, error)
-        }
-        
-        routeTask = directions.calculate(options) {(waypoints, potentialRoutes, potentialError) in
-
-            guard let routes = potentialRoutes else {
-                return complete(nil, nil, potentialError)
+        if(delegate?.routeControllerGetDirections?(from: location, along: progress, completion: completion) != true){
+            // Run the default route calculation if the delegate method is not defined or does not return true
+            routeTask?.cancel()
+            let options = progress.reroutingOptions(with: location)
+            
+            self.lastRerouteLocation = location
+            
+            let complete = { [weak self] (mostSimilarRoute: Route?, routes: [Route]?, error: NSError?) in
+                completion(mostSimilarRoute, routes, error)
             }
             
-            // Checks by comparing leg `name` properties and see if the edit distance is within threshold
-            let mostSimilar = routes.mostSimilar(to: progress.route)
-            return complete(mostSimilar ?? routes.first, routes, potentialError)
+            routeTask = directions.calculate(options) {(waypoints, potentialRoutes, potentialError) in
+                
+                guard let routes = potentialRoutes else {
+                    return complete(nil, nil, potentialError)
+                }
+                
+                // Checks by comparing leg `name` properties and see if the edit distance is within threshold
+                let mostSimilar = routes.mostSimilar(to: progress.route)
+                return complete(mostSimilar ?? routes.first, routes, potentialError)
+            }
         }
     }
 
