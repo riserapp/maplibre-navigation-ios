@@ -1,51 +1,49 @@
 import UIKit
 
 extension BottomBannerView {
-    
     func setupViews() {
-        
         let timeRemainingLabel = TimeRemainingLabel()
         timeRemainingLabel.translatesAutoresizingMaskIntoConstraints = false
         timeRemainingLabel.font = .systemFont(ofSize: 28, weight: .medium)
-        addSubview(timeRemainingLabel)
+        self.addSubview(timeRemainingLabel)
         self.timeRemainingLabel = timeRemainingLabel
         
         let distanceRemainingLabel = DistanceRemainingLabel()
         distanceRemainingLabel.translatesAutoresizingMaskIntoConstraints = false
         distanceRemainingLabel.font = .systemFont(ofSize: 18, weight: .medium)
-        addSubview(distanceRemainingLabel)
+        self.addSubview(distanceRemainingLabel)
         self.distanceRemainingLabel = distanceRemainingLabel
         
         let arrivalTimeLabel = ArrivalTimeLabel()
         arrivalTimeLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(arrivalTimeLabel)
+        self.addSubview(arrivalTimeLabel)
         self.arrivalTimeLabel = arrivalTimeLabel
         
         let cancelButton = CancelButton(type: .custom)
         cancelButton.translatesAutoresizingMaskIntoConstraints = false
         cancelButton.setImage(UIImage(named: "close", in: .mapboxNavigation, compatibleWith: nil), for: .normal)
-        addSubview(cancelButton)
+        self.addSubview(cancelButton)
         self.cancelButton = cancelButton
         
         let verticalDivider = SeparatorView()
         verticalDivider.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(verticalDivider)
-        self.verticalDividerView = verticalDivider
+        self.addSubview(verticalDivider)
+        verticalDividerView = verticalDivider
         
         let horizontalDividerView = SeparatorView()
         horizontalDividerView.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(horizontalDividerView)
+        self.addSubview(horizontalDividerView)
         self.horizontalDividerView = horizontalDividerView
         
-        setupConstraints()
+        self.setupConstraints()
     }
     
-    fileprivate func setupConstraints() {
-        setupVerticalCompactLayout(&verticalCompactConstraints)
-        setupVerticalRegularLayout(&verticalRegularConstraints)
+    private func setupConstraints() {
+        self.setupVerticalCompactLayout(&verticalCompactConstraints)
+        self.setupVerticalRegularLayout(&verticalRegularConstraints)
     }
     
-    fileprivate func setupVerticalCompactLayout(_ c: inout [NSLayoutConstraint]) {
+    private func setupVerticalCompactLayout(_ c: inout [NSLayoutConstraint]) {
         c.append(heightAnchor.constraint(equalToConstant: 50))
         
         c.append(cancelButton.widthAnchor.constraint(equalTo: heightAnchor))
@@ -73,7 +71,7 @@ extension BottomBannerView {
         c.append(arrivalTimeLabel.centerYAnchor.constraint(equalTo: cancelButton.centerYAnchor))
     }
     
-    fileprivate func setupVerticalRegularLayout(_ c: inout [NSLayoutConstraint]) {
+    private func setupVerticalRegularLayout(_ c: inout [NSLayoutConstraint]) {
         c.append(heightAnchor.constraint(equalToConstant: 80))
         
         c.append(timeRemainingLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10))
@@ -101,7 +99,7 @@ extension BottomBannerView {
         c.append(arrivalTimeLabel.trailingAnchor.constraint(equalTo: verticalDividerView.leadingAnchor, constant: -10))
     }
     
-    open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override open func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         verticalCompactConstraints.forEach { $0.isActive = traitCollection.verticalSizeClass == .compact }
         verticalRegularConstraints.forEach { $0.isActive = traitCollection.verticalSizeClass != .compact }

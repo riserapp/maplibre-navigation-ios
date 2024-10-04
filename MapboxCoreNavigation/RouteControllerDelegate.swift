@@ -1,7 +1,6 @@
-import Foundation
 import CoreLocation
+import Foundation
 import MapboxDirections
-
 
 /**
  The `RouteControllerDelegate` protocol provides methods for responding to significant events during the user’s traversal of a route monitored by a `RouteController`.
@@ -23,8 +22,8 @@ public protocol RouteControllerDelegate: AnyObject {
     /**
      Called immediately before the route controller calculates a new route.
      
-     This method is called after `routeController(_:shouldRerouteFrom:)` is called, simultaneously with the `RouteControllerWillReroute` notification being posted, and before `routeController(_:didRerouteAlong:)` is called.
-     
+     This method is called after `routeController(_:shouldRerouteFrom:)` is called, simultaneously with the `RouteControllerWillReroute` notification being posted, and before `routeController(_:didRerouteAlong:reason:)` is called.
+
      - parameter routeController: The route controller that will calculate a new route.
      - parameter location: The user’s current location.
      */
@@ -103,7 +102,6 @@ public protocol RouteControllerDelegate: AnyObject {
     @objc(routeController:shouldPreventReroutesWhenArrivingAtWaypoint:)
     optional func routeController(_ routeController: RouteController, shouldPreventReroutesWhenArrivingAt waypoint: Waypoint) -> Bool
     
-    
     /**
      Called when the route controller will disable battery monitoring.
      
@@ -116,15 +114,24 @@ public protocol RouteControllerDelegate: AnyObject {
     optional func routeControllerShouldDisableBatteryMonitoring(_ routeController: RouteController) -> Bool
     
     /**
-    Allows to customise the calculation of a route.
+     Allows to customise the calculation of a route.
     
-    If you want to overwrite the default rerouting logic, return true.
+     If you want to overwrite the default rerouting logic, return true.
      
-     - parameter from: The current location of the user
-     - parameter along: The route progress
-     - parameter completion: Callback function when either the route was successfully calculated or if there was an error
-     - return: True to prevent the route controller from running its own rerouting logic
-     */
+      - parameter from: The current location of the user
+      - parameter along: The route progress
+      - parameter completion: Callback function when either the route was successfully calculated or if there was an error
+      - return: True to prevent the route controller from running its own rerouting logic
+      */
     @objc(routeControllerGetDirections:along:completion:)
-    optional func routeControllerGetDirections(from location: CLLocation, along progress: RouteProgress, completion: @escaping (_ mostSimilarRoute: Route?, _ routes: [Route]?, _ error: Error?)->Void) -> Bool
+    optional func routeControllerGetDirections(from location: CLLocation, along progress: RouteProgress, completion: @escaping (_ mostSimilarRoute: Route?, _ routes: [Route]?, _ error: Error?) -> Void) -> Bool
+
+    /**
+     Allows to customize the snapping of raw and pre-snapped location. If no implementation is provided, the default snapping will be used.
+
+        - parameter rawLocation: The raw location from the controller
+        - returns: The snapped location or nil if snapping were impossible.
+     */
+    @objc(routeControllerSnapLocation:)
+    optional func routeControllerSnap(rawLocation: CLLocation) -> CLLocation?
 }

@@ -1,5 +1,7 @@
 import Foundation
 import MapboxCoreNavigation
+import MapboxCoreNavigationObjC
+import MapboxNavigationObjC
 
 extension NSError {
     /**
@@ -9,7 +11,7 @@ extension NSError {
         var userInfo = [
             NSLocalizedFailureReasonErrorKey: localizedFailureReason
         ]
-        if let spokenInstructionCode = spokenInstructionCode {
+        if let spokenInstructionCode {
             userInfo[MBSpokenInstructionErrorCodeKey] = String(spokenInstructionCode.rawValue)
         }
         self.init(domain: MBErrorDomain, code: code.rawValue, userInfo: userInfo)

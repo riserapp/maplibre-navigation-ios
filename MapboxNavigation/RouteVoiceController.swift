@@ -1,16 +1,15 @@
-
 import AVFoundation
-import Foundation
 import MapboxCoreNavigation
 import MapboxDirections
+import MapboxNavigationObjC
 
 extension ErrorUserInfoKey {
     static let spokenInstructionErrorCode = MBSpokenInstructionErrorCodeKey
 }
 
-extension NSAttributedString {
+public extension NSAttributedString {
     @available(iOS 10.0, *)
-    public func pronounced(_ pronunciation: String) -> NSAttributedString {
+    func pronounced(_ pronunciation: String) -> NSAttributedString {
         let phoneticWords = pronunciation.components(separatedBy: " ")
         let phoneticString = NSMutableAttributedString()
         for (word, phoneticWord) in zip(string.components(separatedBy: " "), phoneticWords) {
@@ -32,18 +31,18 @@ extension SpokenInstruction {
     func attributedText(for legProgress: RouteLegProgress) -> NSAttributedString {
         let attributedText = NSMutableAttributedString(string: text)
         if let step = legProgress.upComingStep,
-            let name = step.names?.first,
-            let phoneticName = step.phoneticNames?.first {
+           let name = step.names?.first,
+           let phoneticName = step.phoneticNames?.first {
             let nameRange = attributedText.mutableString.range(of: name)
-            if (nameRange.location != NSNotFound) {
+            if nameRange.location != NSNotFound {
                 attributedText.replaceCharacters(in: nameRange, with: NSAttributedString(string: name).pronounced(phoneticName))
             }
         }
         if let step = legProgress.followOnStep,
-            let name = step.names?.first,
-            let phoneticName = step.phoneticNames?.first {
+           let name = step.names?.first,
+           let phoneticName = step.phoneticNames?.first {
             let nameRange = attributedText.mutableString.range(of: name)
-            if (nameRange.location != NSNotFound) {
+            if nameRange.location != NSNotFound {
                 attributedText.replaceCharacters(in: nameRange, with: NSAttributedString(string: name).pronounced(phoneticName))
             }
         }
@@ -56,7 +55,6 @@ extension SpokenInstruction {
  */
 @objc(MBRouteVoiceController)
 open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
-    
     lazy var speechSynth = AVSpeechSynthesizer()
     
     let audioQueue = DispatchQueue(label: Bundle.mapboxNavigation.bundleIdentifier! + ".audio")
@@ -90,11 +88,9 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     override public init() {
         super.init()
 
-        verifyBackgroundAudio()
-
-        speechSynth.delegate = self
+        self.speechSynth.delegate = self
         
-        resumeNotifications()
+        self.resumeNotifications()
     }
 
     private func verifyBackgroundAudio() {
@@ -113,11 +109,11 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     }
     
     func resumeNotifications() {
-        NotificationCenter.default.addObserver(self, selector: #selector(didPassSpokenInstructionPoint(notification:)), name: .routeControllerDidPassSpokenInstructionPoint, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(pauseSpeechAndPlayReroutingDing(notification:)), name: .routeControllerWillReroute, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(didReroute(notification:)), name: .routeControllerDidReroute, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.didPassSpokenInstructionPoint(notification:)), name: .routeControllerDidPassSpokenInstructionPoint, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.pauseSpeechAndPlayReroutingDing(notification:)), name: .routeControllerWillReroute, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(self.didReroute(notification:)), name: .routeControllerDidReroute, object: nil)
         
-        muteToken = NavigationSettings.shared.observe(\.voiceMuted) { [weak self] settings, _ in
+        self.muteToken = NavigationSettings.shared.observe(\.voiceMuted) { [weak self] settings, _ in
             if settings.voiceMuted {
                 self?.speechSynth.stopSpeaking(at: .immediate)
             }
@@ -133,30 +129,30 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     @objc func didReroute(notification: NSNotification) {
         // Play reroute sound when a faster route is found
         if notification.userInfo?[RouteControllerNotificationUserInfoKey.isProactiveKey] as! Bool {
-            pauseSpeechAndPlayReroutingDing(notification: notification)
+            self.pauseSpeechAndPlayReroutingDing(notification: notification)
         }
     }
     
     @objc func pauseSpeechAndPlayReroutingDing(notification: NSNotification) {
-        speechSynth.stopSpeaking(at: .word)
+        self.speechSynth.stopSpeaking(at: .word)
         
-        guard playRerouteSound && !NavigationSettings.shared.voiceMuted else {
+        guard self.playRerouteSound, !NavigationSettings.shared.voiceMuted else {
             return
         }
         
         do {
-            try mixAudio()
+            try self.mixAudio()
         } catch {
-            voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
+            self.voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
         }
-        rerouteSoundPlayer.play()
+        self.rerouteSoundPlayer.play()
     }
     
     @objc public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         do {
-            try unDuckAudio()
+            try self.unDuckAudio()
         } catch {
-            voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
+            self.voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
         }
     }
     
@@ -179,14 +175,14 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
     @objc open func didPassSpokenInstructionPoint(notification: NSNotification) {
         guard !NavigationSettings.shared.voiceMuted else { return }
         
-        routeProgress = notification.userInfo![RouteControllerNotificationUserInfoKey.routeProgressKey] as? RouteProgress
-        assert(routeProgress != nil, "routeProgress should not be nil.")
+        self.routeProgress = notification.userInfo?[RouteControllerNotificationUserInfoKey.routeProgressKey] as? RouteProgress
+        assert(self.routeProgress != nil, "routeProgress should not be nil.")
 
         guard let instruction = routeProgress?.currentLegProgress.currentStepProgress.currentSpokenInstruction else { return }
-        let speechLocale = routeProgress?.route.routeOptions.locale
+        let speechLocale = self.routeProgress?.route.routeOptions.locale
         
-        lastSpokenInstruction = instruction
-        speak(instruction, with: speechLocale)
+        self.lastSpokenInstruction = instruction
+        self.speak(instruction, with: speechLocale)
     }
 
     /**
@@ -194,18 +190,20 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
      
      - parameter instruction: The instruction to read aloud.
      - parameter locale: The `Locale` used to create the voice read aloud the given instruction. If `nil` the `Locale.preferredLocalLanguageCountryCode` is used for creating the voice.
+     - parameter ignoreProgress: A `Bool` that indicates if the routeProgress is added to the instruction.
      */
-    open func speak(_ instruction: SpokenInstruction, with locale: Locale?) {
-        assert(routeProgress != nil, "routeProgress should not be nil.")
-        
-        if speechSynth.isSpeaking, let lastSpokenInstruction = lastSpokenInstruction {
-            voiceControllerDelegate?.voiceController?(self, didInterrupt: lastSpokenInstruction, with: instruction)
+    open func speak(_ instruction: SpokenInstruction, with locale: Locale?, ignoreProgress: Bool = false) {
+        // Don't require background audio unless the implementer is actually using speech APIs
+        self.verifyBackgroundAudio()
+
+        if self.speechSynth.isSpeaking, let lastSpokenInstruction {
+            self.voiceControllerDelegate?.voiceController?(self, didInterrupt: lastSpokenInstruction, with: instruction)
         }
         
         do {
-            try duckAudio()
+            try self.duckAudio()
         } catch {
-            voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
+            self.voiceControllerDelegate?.voiceController?(self, spokenInstructionsDidFailWith: error)
         }
         
 
@@ -225,7 +223,6 @@ open class RouteVoiceController: NSObject, AVSpeechSynthesizerDelegate {
  */
 @objc(MBVoiceControllerDelegate)
 public protocol VoiceControllerDelegate {
-    
     /**
      Called when the voice controller failed to speak an instruction.
      
@@ -249,8 +246,8 @@ public protocol VoiceControllerDelegate {
      
      - parameter voiceController: The voice controller that will speak an instruction.
      - parameter instruction: The spoken instruction that will be said.
-     - parameter routeProgress: The `RouteProgress` just before when the instruction is scheduled to be spoken.
+     - parameter routeProgress: The `RouteProgress` just before when the instruction is scheduled to be spoken. Could be `nil` if no progress is available or if it should be ignored.
      **/
     @objc(voiceController:willSpeakSpokenInstruction:routeProgress:)
-    optional func voiceController(_ voiceController: RouteVoiceController, willSpeak instruction: SpokenInstruction, routeProgress: RouteProgress) -> SpokenInstruction?
+    optional func voiceController(_ voiceController: RouteVoiceController, willSpeak instruction: SpokenInstruction, routeProgress: RouteProgress?) -> SpokenInstruction?
 }
