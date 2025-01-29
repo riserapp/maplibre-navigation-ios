@@ -6,7 +6,7 @@
     - To simulate a route, pass a `SimulatedLocationManager` to `startNavigation()` function:
 
     ```swift
-    #if targetEnvironment(simulator) 
+    #if targetEnvironment(simulator)
         let locationManager = SimulatedLocationManager(route: route)
         locationManager.speedMultiplier = 2
         self.startNavigation(with: route, animated: false, locationManager: locationManager)
@@ -17,6 +17,13 @@
 * Custom location snapping in the `RouteController` via the delegate
 * Fix: If the directions API endpoint doesn't include audio instructions, `didArrive:` would never be called.
   * Merged in <https://github.com/maplibre/maplibre-navigation-ios/pull/72>
+* Updated "turf" geometry library from 0.2.2 to 2.8.0
+    * Merged in https://github.com/maplibre/maplibre-navigation-ios/pull/91
+* Only require background audio when using speech synthesis in https://github.com/maplibre/maplibre-navigation-ios/pull/64
+* Fix: Respond to changes in dynamic type without having to restart the app in https://github.com/maplibre/maplibre-navigation-ios/pull/65
+* Fix: crash in EndOfRouteViewController and restore its presentation by in https://github.com/maplibre/maplibre-navigation-ios/pull/71
+* Fix: retain cycles in RouteMapViewController
+* Fix: hide lanesView on navigation start
 
 ## 3.0.0 (Jun 15, 2024)
 * The `speak` method in `RouteVoiceController` can be used without a given `RouteProgress` or the `RouteProgress` can explicitly ignored so that it will not be added to the voice instruction.
@@ -42,6 +49,8 @@
     - Merged in <https://github.com/maplibre/maplibre-navigation-ios/pull/47>
 * Fix: NavigationViewController displayed incorrect `speedMultiplier` when using SimulatedLocationManager
     - Merged in <https://github.com/maplibre/maplibre-navigation-ios/pull/49>
+* Adjusted the camera during navigation to show more of what's "ahead" in the route - effectively moving the puck lower on the screen. As before, see `NavigationMapViewCourseTrackingDelegate.updateCamera(_:location:,routeProgress:)` if you want to customize this behavior.
+    - Merged in <https://github.com/maplibre/maplibre-navigation-ios/pull/92>
 
 ## v2.0.0 (May 23, 2023)
 * Upgrade minimum iOS version from 11.0 to 12.0.

@@ -258,9 +258,7 @@ open class NavigationMapView: MLNMapView, UIGestureRecognizerDelegate {
         }
     }
    
-    override open func mapViewDidFinishRenderingFrameFullyRendered(_ fullyRendered: Bool, frameEncodingTime: Double, frameRenderingTime: Double) {
-        super.mapViewDidFinishRenderingFrameFullyRendered(fullyRendered, frameEncodingTime: frameEncodingTime, frameRenderingTime: frameRenderingTime)
-        
+    func updateCourseTrackingAfterDidFinishRenderingFrame() {
         guard self.shouldPositionCourseViewFrameByFrame else { return }
         guard let location = userLocationForCourseTracking else { return }
         
@@ -293,7 +291,12 @@ open class NavigationMapView: MLNMapView, UIGestureRecognizerDelegate {
             if !cameraUpdated {
                 let newCamera = MLNMapCamera(lookingAtCenter: location.coordinate, acrossDistance: self.altitude, pitch: 45, heading: location.course)
                 let function = CAMediaTimingFunction(name: CAMediaTimingFunctionName.linear)
-                setCamera(newCamera, withDuration: 1, animationTimingFunction: function, edgePadding: UIEdgeInsets.zero, completionHandler: nil)
+
+                // Because it's more useful to show what's ahead than what's behind, we bias the camera to put
+                // the user location puck in the lower portion of the visible map, showing more of what's ahead.
+                let edgePadding = UIEdgeInsets(top: bounds.height * 0.4 - safeAreaInsets.bottom, left: 0, bottom: 0, right: 0)
+
+                setCamera(newCamera, withDuration: 1, animationTimingFunction: function, edgePadding: edgePadding, completionHandler: nil)
             }
         }
         
@@ -602,16 +605,19 @@ open class NavigationMapView: MLNMapView, UIGestureRecognizerDelegate {
         let minimumZoomLevel: Float = 14.5
         
         let shaftLength = max(min(30 * metersPerPoint(atLatitude: maneuverCoordinate.latitude), 30), 10)
-        let polyline = Polyline(routeCoordinates)
-        let shaftCoordinates = Array(polyline.trimmed(from: maneuverCoordinate, distance: -shaftLength).coordinates.reversed()
-            + polyline.trimmed(from: maneuverCoordinate, distance: shaftLength).coordinates.suffix(from: 1))
+        let polyline = LineString(routeCoordinates)
+        guard let beforeTrimmedPolyline = polyline.trimmed(from: maneuverCoordinate, distance: -shaftLength),
+              let afterTrimmedPolyline = polyline.trimmed(from: maneuverCoordinate, distance: shaftLength) else {
+            return
+        }
+        let shaftCoordinates = Array(beforeTrimmedPolyline.coordinates.reversed() + afterTrimmedPolyline.coordinates.suffix(from: 1))
         if shaftCoordinates.count > 1 {
             var shaftStrokeCoordinates = shaftCoordinates
             let shaftStrokePolyline = ArrowStrokePolyline(coordinates: &shaftStrokeCoordinates, count: UInt(shaftStrokeCoordinates.count))
             let shaftDirection = shaftStrokeCoordinates[shaftStrokeCoordinates.count - 2].direction(to: shaftStrokeCoordinates.last!)
             let maneuverArrowStrokePolylines = [shaftStrokePolyline]
             let shaftPolyline = ArrowFillPolyline(coordinates: shaftCoordinates, count: UInt(shaftCoordinates.count))
-            
+
             let arrowShape = MLNShapeCollection(shapes: [shaftPolyline])
             let arrowStrokeShape = MLNShapeCollection(shapes: maneuverArrowStrokePolylines)
             
@@ -783,17 +789,17 @@ open class NavigationMapView: MLNMapView, UIGestureRecognizerDelegate {
         let closest = routes.sorted { left, right -> Bool in
             
             // existance has been assured through use of filter.
-            let leftLine = Polyline(left.coordinates!)
-            let rightLine = Polyline(right.coordinates!)
-            let leftDistance = leftLine.closestCoordinate(to: tapCoordinate)!.distance
-            let rightDistance = rightLine.closestCoordinate(to: tapCoordinate)!.distance
-            
+            let leftLine = LineString(left.coordinates!)
+            let rightLine = LineString(right.coordinates!)
+            let leftDistance = leftLine.closestCoordinate(to: tapCoordinate)!.coordinate.distance(to: tapCoordinate)
+            let rightDistance = rightLine.closestCoordinate(to: tapCoordinate)!.coordinate.distance(to: tapCoordinate)
+
             return leftDistance < rightDistance
         }
         
         // filter closest coordinates by which ones are under threshold.
         let candidates = closest.filter {
-            let closestCoordinate = Polyline($0.coordinates!).closestCoordinate(to: tapCoordinate)!.coordinate
+            let closestCoordinate = LineString($0.coordinates!).closestCoordinate(to: tapCoordinate)!.coordinate
             let closestPoint = self.convert(closestCoordinate, toPointTo: self)
             
             return closestPoint.distance(to: point) < self.tapGestureDistanceThreshold
@@ -1039,7 +1045,7 @@ open class NavigationMapView: MLNMapView, UIGestureRecognizerDelegate {
             for (stepIndex, step) in leg.steps.enumerated() {
                 for instruction in step.instructionsSpokenAlongStep! {
                     let feature = MLNPointFeature()
-                    feature.coordinate = Polyline(route.legs[legIndex].steps[stepIndex].coordinates!.reversed()).coordinateFromStart(distance: instruction.distanceAlongStep)!
+                    feature.coordinate = LineString(route.legs[legIndex].steps[stepIndex].coordinates!.reversed()).coordinateFromStart(distance: instruction.distanceAlongStep)!
                     feature.attributes = ["instruction": instruction.text]
                     features.append(feature)
                 }
@@ -1077,8 +1083,12 @@ open class NavigationMapView: MLNMapView, UIGestureRecognizerDelegate {
      Sets the camera directly over a series of coordinates.
      */
     @objc public func setOverheadCameraView(from userLocation: CLLocationCoordinate2D, along coordinates: [CLLocationCoordinate2D], for bounds: UIEdgeInsets) {
+        assert(!coordinates.isEmpty, "must specify coordinates when setting overhead camera view")
+
         self.isAnimatingToOverheadMode = true
-        let slicedLine = Polyline(coordinates).sliced(from: userLocation).coordinates
+        guard let slicedLine = LineString(coordinates).sliced(from: userLocation)?.coordinates else {
+            return
+        }
         let line = MLNPolyline(coordinates: slicedLine, count: UInt(slicedLine.count))
         
         self.tracksUserCourse = false
