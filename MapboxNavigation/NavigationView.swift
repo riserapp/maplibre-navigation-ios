@@ -76,7 +76,7 @@ open class NavigationView: UIView {
         static let cancelButton: Selector = #selector(NavigationView.cancelButtonTapped(_:))
     }
     
-    lazy var mapView: NavigationMapView = {
+    public lazy var mapView: NavigationMapView = {
         let map: NavigationMapView = .forAutoLayout(frame: self.bounds)
         map.delegate = self.delegate
         map.navigationMapDelegate = self.delegate
